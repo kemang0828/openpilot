@@ -109,6 +109,8 @@ class UIState:
 
     # Brightness and UI options
     self.show_brightness_ratio: float = 1.0
+    self.onroad_minimal: bool = False
+    self.onroad_mochi: bool = False
     self.show_model_view: int = 0
     self.share_data: bool = False
     self.show_camera_with_cluster: bool = False
@@ -225,6 +227,10 @@ class UIState:
     self.show_date_time = self.params.get_int("ShowDateTime")
     self.show_radar_info = self.params.get_int("ShowRadarInfo")
     self.show_brightness_ratio: float = self.params.get_int("ShowCustomBrightness") / 100.0
+    # 주행 화면 최소 모드 (기기 화면만, 외부 HUD는 건드리지 않음).
+    self.onroad_minimal = self.params.get_int("OnroadMinimalMode") == 1
+    # 모찌 화면보호기 (기기 주행 화면 대체, 외부 HUD는 건드리지 않음).
+    self.onroad_mochi = self.params.get_int("OnroadMochiMode") == 1
     self.show_model_view = self.params.get_int("ShowModelView")
     self.share_data = self.params.get_bool("ShareData")
     self.show_camera_with_cluster = self.params.get_int("ShowCameraWithCluster") == 1
