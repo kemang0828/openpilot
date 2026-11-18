@@ -192,6 +192,13 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"TimezoneName", {PERSISTENT, STRING, ""}},                // 로컬 타임존 IANA 이름 (예: "Asia/Seoul"), 앱/WiFi/GPS로 해석되면 기록
     {"TimezoneSource", {PERSISTENT, STRING, ""}},              // 타임존 출처 우선순위 추적 ("app" > "wifi" > "gps")
     {"CarrotTireTrajectory", {PERSISTENT, INT, "0"}},
+    {"OnroadMinimalMode", {PERSISTENT, INT, "0"}},  // 기기 화면 최소 모드 (속도·차선·패스선만 표시)
+    {"OnroadMochiMode", {PERSISTENT, INT, "0"}},  // 모찌 화면보호기 (주행 화면 대체, 기본 꺼짐)
+    {"CarrotPhoneWarningOff", {PERSISTENT, BOOL, "0"}},  // 실험용: 실내 카메라 폰 사용 경고 끄기 (폰 감지 무시)
+    {"CarrotSleepWarningOff", {PERSISTENT, BOOL, "0"}},  // 실험용: 실내 카메라 졸음 경고 끄기 (졸음 감지 무시)
+    {"CarrotEyeWarningOff", {PERSISTENT, BOOL, "0"}},  // 실험용: 실내 카메라 눈 감김 경고 끄기 (깜빡임 감지 무시)
+    {"CarrotPoseWarningOff", {PERSISTENT, BOOL, "0"}},  // 실험용: 실내 카메라 고개 숙임/돌림 경고 끄기 (자세 감지 무시)
+    {"CarrotWheelTouchWarningOff", {PERSISTENT, BOOL, "0"}},  // 테스트용: 핸들 안 잡음 경고 끄기 (핸들 잡은 것으로 간주)
     {"ShowCustomBrightness", {PERSISTENT, INT, "100"}},
     {"ShowModelView", {PERSISTENT, INT, "0"}},
     {"ShowCameraWithCluster", {PERSISTENT, INT, "0"}},
