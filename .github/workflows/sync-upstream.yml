@@ -1,0 +1,23 @@
+name: Sync upstream carrot-wip
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: carrot-wip
+          fetch-depth: 0
+      - name: Sync with upstream
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote add upstream https://github.com/ajouatom/openpilot.git
+          git fetch upstream carrot-wip
+          git merge --ff-only upstream/carrot-wip || git merge upstream/carrot-wip
+          git push origin carrot-wip
