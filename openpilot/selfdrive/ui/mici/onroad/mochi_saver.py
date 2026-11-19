@@ -4,7 +4,8 @@
 계속 반복해 움직이는 애니메이션 (사용자 승인한 시뮬레이션과 동일 구성).
 
 동작 (OnroadMochiMode=1일 때만, 주행 화면에서만):
-- 모찌 화면을 터치하면 주행 화면으로 복귀.
+- 모찌를 켜면 주행 화면이 뜰 때 자동으로 모찌 화면으로 전환 (자동 시작).
+- 모찌 화면을 터치하면 주행 화면으로 복귀 (이번 운전에서는 자동 시작 안 함).
 - 주행 화면을 650ms 길게 누르면 모찌 화면으로 전환 (게이지 표시).
 - 주행 화면 짧은 터치는 아무 동작 없음 (주행 중 오동작 방지).
 
@@ -82,6 +83,9 @@ class MochiSaver:
     self._press_y = 0.0
     self._press_fired = False
 
+    self._auto_started = False  # 자동 시작(설정 ON 후 최초 1회) 여부
+    self._dismissed = False  # 사용자가 모찌를 터치해 끈 뒤인지
+
     self._expr = EXPR_DRIVING
     self._prev_engaged = False
     self._prev_v_ego = 0.0
@@ -111,6 +115,7 @@ class MochiSaver:
       # 모찌 화면: 터치하면 바로 주행 화면으로 복귀
       if ev.left_pressed:
         self.active = False
+        self._dismissed = True  # 끈 뒤에는 이번 운전에서 자동 시작 안 함
         self._cancel_press()
       return
 
@@ -125,13 +130,22 @@ class MochiSaver:
       self._cancel_press()
 
   def update(self) -> None:
-    """매 프레임 호출: 길게 누르기 판정 + 표정 선택."""
+    """매 프레임 호출: 자동 시작 + 길게 누르기 판정 + 표정 선택."""
     if not self.enabled or not ui_state.started:
       self.active = False
+      self._auto_started = False  # 다음 운전 때 다시 자동 시작되도록
+      self._dismissed = False
       self._cancel_press()
       return
 
     now = time.monotonic()
+
+    # 자동 시작: 모찌를 켜는 즉시(설정 ON + 주행 화면) 1회 자동 표시.
+    # 사용자가 터치해 껐다면 이번 운전에서는 다시 안 뜬다.
+    if not self.active and not self._auto_started and not self._dismissed:
+      self.active = True
+      self._auto_started = True
+      self._pressing = False
 
     # 길게 누르기: 손가락을 가만히 들고 있어도 중간 이벤트가 안 오므로
     # 시간으로 직접 판정한다. 손을 뗐으면 release 이벤트가 취소한다.
