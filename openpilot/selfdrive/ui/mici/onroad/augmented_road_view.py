@@ -25,6 +25,7 @@ from enum import IntEnum
 
 from openpilot.selfdrive.ui.mici.onroad.traffic_light import TrafficLight
 from openpilot.selfdrive.ui.mici.onroad.mochi_saver import MochiSaver
+from openpilot.selfdrive.ui.mici.onroad.robot_saver import RobotSaver
 import math
 from openpilot.common.params import Params
 
@@ -175,6 +176,7 @@ class AugmentedRoadView(CameraView):
     self._confidence_ball = ConfidenceBall()
     self._traffic_light = TrafficLight()
     self._mochi_saver = MochiSaver()
+    self._robot_saver = RobotSaver()
     self._offroad_label = UnifiedLabel("start the car to\nuse openpilot", 54, FontWeight.DISPLAY,
                                        text_color=rl.Color(255, 255, 255, int(255 * 0.9)),
                                        alignment=TextAlignment.CENTER,
@@ -221,9 +223,13 @@ class AugmentedRoadView(CameraView):
     if not self._bookmark_icon.interacting():
       super()._handle_mouse_release(mouse_pos)
 
+  def _face_saver(self):
+    """선택된 화면보호기 (OnroadFaceMode 0: 모찌, 1: 로봇)."""
+    return self._robot_saver if ui_state.onroad_face_mode == 1 else self._mochi_saver
+
   def _handle_mouse_event(self, mouse_event: MouseEvent) -> None:
-    # 모찌 화면보호기: 주행 화면 길게 누르기 / 모찌 화면 터치 복귀
-    self._mochi_saver.handle_mouse_event(mouse_event)
+    # 화면보호기: 주행 화면 길게 누르기 / 얼굴 화면 터치 복귀
+    self._face_saver().handle_mouse_event(mouse_event)
 
   def _render(self, _):
     # plotMode 갱신(가끔 파일 읽기)은 drawTime 창 밖에서 — total을 오염시키지 않는다
@@ -327,9 +333,9 @@ class AugmentedRoadView(CameraView):
       rl.draw_circle(x, y, 6, rl.Color(255, 0, 0, 220))
     extras_ms += (time.monotonic() - _t) * 1000.0
 
-    # 모찌 화면보호기 — 주행 화면 대체 (OnroadMochiMode=1일 때만, 그 외는 그리지 않음)
-    self._mochi_saver.update()
-    self._mochi_saver.render(self.rect)
+    # 화면보호기 — 주행 화면 대체 (OnroadMochiMode=1일 때만, 그 외는 그리지 않음)
+    self._face_saver().update()
+    self._face_saver().render(self.rect)
 
     # publish uiDebug
     msg = messaging.new_message('uiDebug', valid=True)

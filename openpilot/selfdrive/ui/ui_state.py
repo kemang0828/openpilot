@@ -111,6 +111,7 @@ class UIState:
     self.show_brightness_ratio: float = 1.0
     self.onroad_minimal: bool = False
     self.onroad_mochi: bool = False
+    self.onroad_face_mode: int = 0
     self.show_model_view: int = 0
     self.share_data: bool = False
     self.show_camera_with_cluster: bool = False
@@ -231,6 +232,8 @@ class UIState:
     self.onroad_minimal = self.params.get_int("OnroadMinimalMode") == 1
     # 모찌 화면보호기 (기기 주행 화면 대체, 외부 HUD는 건드리지 않음).
     self.onroad_mochi = self.params.get_int("OnroadMochiMode") == 1
+    # 화면보호기 얼굴 선택 (0: 모찌, 1: 로봇).
+    self.onroad_face_mode = min(max(self.params.get_int("OnroadFaceMode"), 0), 1)
     self.show_model_view = self.params.get_int("ShowModelView")
     self.share_data = self.params.get_bool("ShareData")
     self.show_camera_with_cluster = self.params.get_int("ShowCameraWithCluster") == 1

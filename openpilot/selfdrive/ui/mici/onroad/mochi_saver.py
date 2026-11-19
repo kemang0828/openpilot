@@ -87,6 +87,7 @@ class MochiSaver:
     self._dismissed = False  # 사용자가 모찌를 터치해 끈 뒤인지
 
     self._expr = EXPR_DRIVING
+    self._expr_change_t = 0.0  # 표정이 바뀐 시각 (rl.get_time 기준, 전환 연출용)
     self._prev_engaged = False
     self._prev_v_ego = 0.0
     self._prev_brake = False
@@ -265,7 +266,10 @@ class MochiSaver:
       expr = EXPR_BLINK_RIGHT
     else:
       expr = EXPR_DRIVING
-    self._expr = expr
+    # 표정이 바뀌면 전환 연출 시작 시각을 기록한다 (주행 상태와 무관한 순환 아님)
+    if expr != self._expr:
+      self._expr_change_t = rl.get_time()
+      self._expr = expr
 
   def _cancel_press(self) -> None:
     self._pressing = False
@@ -310,10 +314,19 @@ class MochiSaver:
       jx = 5.0 * s * math.sin(t * math.pi * 2.0 * 9.0)
     elif expr == EXPR_AUTOHOLD:
       breathe = 1.0 + 0.02 * math.sin(t * math.pi * 2.0 / 4.0)
+    elif expr == EXPR_DRIVING:
+      # 주행중에도 가만히 있지 않고 살짝 숨쉬듯 커졌다 작아짐
+      breathe = 1.0 + 0.015 * math.sin(t * math.pi * 2.0 / 4.0)
 
-    face_cy = cy + bounce
-    eye_r = 165.0 * s * breathe
-    eye_dx = 250.0 * s * breathe
+    # 표정 전환 연출 (0.25초 동안 위에서 살짝 내려오며 커짐, 순간 전환 대신)
+    trans = min(1.0, max(0.0, (t - self._expr_change_t) / 0.25))
+    ease = 1.0 - (1.0 - trans) * (1.0 - trans)
+    slide = 26.0 * s * (1.0 - ease)
+    pop = 0.96 + 0.04 * ease
+
+    face_cy = cy + bounce - slide
+    eye_r = 165.0 * s * breathe * pop
+    eye_dx = 250.0 * s * breathe * pop
     eye_y = -70.0 * s * breathe
     pupil_r = 62.0 * s
     mouth_y = 250.0 * s * breathe
@@ -353,6 +366,11 @@ class MochiSaver:
     elif expr == EXPR_START or expr == EXPR_ENGAGE:
       mouth = "open"
 
+    # 주행중: 눈동자가 몇 초마다 좌우·상하로 천천히 옮겨 다님 (멍하니 있지 않게)
+    if expr == EXPR_DRIVING:
+      pupil_dx += 28.0 * s * math.sin(t * math.pi * 2.0 / 7.0)
+      pupil_dy += 14.0 * s * math.sin(t * math.pi * 2.0 / 11.0 + 1.0)
+
     blink = self._blink_scale(t)
     lid = min(lid, blink) if expr not in (EXPR_TRAFFIC, EXPR_DISENGAGE) else lid
 
@@ -381,10 +399,10 @@ class MochiSaver:
       self._draw_hold_badge(cx, face_cy - 460.0 * s, s)
 
   def _blink_scale(self, t: float, period: float = 2.3) -> float:
-    """깜빡임: 2.3초 주기로 0.12초간 감았다 뜬다. 1=활짝."""
+    """깜빡임: 2.3초 주기로 0.15초간 감았다 뜬다. 1=활짝."""
     p = (t % period) / period
-    if p < 0.12:
-      return 0.12 + 0.88 * abs(p - 0.06) / 0.06
+    if p < 0.15:
+      return 0.08 + 0.92 * abs(p - 0.075) / 0.075
     return 1.0
 
   def _draw_eye(self, ex: float, ey: float, r: float, lid: float,
