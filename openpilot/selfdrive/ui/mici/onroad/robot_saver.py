@@ -415,6 +415,9 @@ class RobotSaver:
                      _col(top_rgb), _col(bottom_rgb),
                      lid, arch, wink_closed, s)
 
+    # 좌·우 방향 표시 (눈 바깥쪽 < / >)
+    self._draw_direction_chevron(cx, cy, s, t, expr)
+
     # 주행중: 눈가에 작은 별 반짝임이 드물게 떴다 사라짐
     if expr == EXPR_DRIVING:
       star_a = int(90 + 90 * math.sin(t * math.pi * 2.0 / 9.0))
@@ -454,6 +457,47 @@ class RobotSaver:
     # 윙크: 깜빡이는 쪽 눈을 번갈아 감음
     if wink_closed:
       rl.draw_rectangle(int(ex - w / 2), int(ey - h / 2), int(w), int(h), rl.BLACK)
+
+  def _draw_direction_chevron(self, cx: float, cy: float, s: float, t: float, expr: str) -> None:
+    """좌·우 방향 표시: 눈 바깥쪽에 < / > 를 두 줄 선으로 그린다.
+    깜빡이는 해당 쪽 눈 윙크와 같은 0.5초 리듬으로 점멸하고,
+    차선변경은 바깥쪽으로 살짝 밀려났다 돌아오는 모션을 준다."""
+    if expr == EXPR_LANE_LEFT or expr == EXPR_BLINK_LEFT:
+      side = -1
+    elif expr == EXPR_LANE_RIGHT or expr == EXPR_BLINK_RIGHT:
+      side = 1
+    else:
+      return
+
+    # 깜빡이: 해당 쪽 눈이 감길 때 화살표도 함께 사라진다 (눈 윙크와 같은 리듬)
+    if expr in (EXPR_BLINK_LEFT, EXPR_BLINK_RIGHT):
+      if int(t * 2.0) % 2 == 0:
+        return
+
+    # 차선변경: 화살표가 바깥쪽으로 살짝 밀려났다 돌아옴
+    slide = 0.0
+    if expr in (EXPR_LANE_LEFT, EXPR_LANE_RIGHT):
+      slide = 18.0 * s * (0.5 + 0.5 * math.sin(t * math.pi * 2.0 / 0.9))
+
+    # 눈 바깥쪽 위치 (눈·테두리 빛띠와 겹치지 않게 간격 확보)
+    eye_w = 340.0 * s
+    eye_dx = 280.0 * s
+    eye_y = -60.0 * s
+    gap = 70.0 * s
+    hw = 55.0 * s  # 화살표 반너비
+    hh = 70.0 * s  # 화살표 반높이
+    thick = max(10.0, 18.0 * s)
+    _, _, rim_rgb = EYE_COLORS.get(expr, EYE_COLORS[EXPR_DRIVING])
+    color = _col(rim_rgb)
+
+    ex = cx + side * eye_dx
+    ey = cy + eye_y
+    ccx = ex + side * (eye_w / 2.0 + gap + hw + slide)
+    # < : 꼭짓점이 왼쪽, > : 꼭짓점이 오른쪽
+    apex_x = ccx + side * hw
+    base_x = ccx - side * hw
+    rl.draw_line_ex(rl.Vector2(apex_x, ey), rl.Vector2(base_x, ey - hh), thick, color)
+    rl.draw_line_ex(rl.Vector2(apex_x, ey), rl.Vector2(base_x, ey + hh), thick, color)
 
   def _draw_zzz(self, cx: float, cy: float, s: float, t: float) -> None:
     """수면: 오른쪽 눈 위에서 "Zzz"가 천천히 떠올랐다 사라짐."""

@@ -380,6 +380,9 @@ class MochiSaver:
       ey = face_cy + eye_y + jy
       self._draw_eye(ex, ey, eye_r, lid, pupil_dx, pupil_dy, pupil_r, t, expr, side)
 
+    # 좌·우 방향 표시 (눈 바깥쪽 < / >)
+    self._draw_direction_chevron(cx, face_cy, s, t, expr)
+
     # 입
     self._draw_mouth(cx, face_cy + mouth_y, mouth, s, t)
 
@@ -425,6 +428,47 @@ class MochiSaver:
       wink_side = -1 if expr == EXPR_BLINK_LEFT else 1
       if side == wink_side and (int(t * 2.0) % 2 == 0):
         rl.draw_rectangle(int(ex - r), int(ey - r), int(2.0 * r), int(2.0 * r * 0.55), rl.BLACK)
+
+  def _draw_direction_chevron(self, cx: float, face_cy: float, s: float, t: float, expr: str) -> None:
+    """좌·우 방향 표시: 눈 바깥쪽에 < / > 를 두 줄 선으로 그린다.
+    깜빡이는 해당 쪽 눈 윙크와 같은 0.5초 리듬으로 점멸하고,
+    차선변경은 바깥쪽으로 살짝 밀려났다 돌아오는 모션을 준다."""
+    if expr == EXPR_LANE_LEFT or expr == EXPR_BLINK_LEFT:
+      side = -1
+    elif expr == EXPR_LANE_RIGHT or expr == EXPR_BLINK_RIGHT:
+      side = 1
+    else:
+      return
+
+    # 깜빡이: 해당 쪽 눈이 감길 때 화살표도 함께 사라진다 (눈 윙크와 같은 리듬)
+    if expr in (EXPR_BLINK_LEFT, EXPR_BLINK_RIGHT):
+      if int(t * 2.0) % 2 == 0:
+        return
+
+    # 차선변경: 화살표가 바깥쪽으로 살짝 밀려났다 돌아옴
+    slide = 0.0
+    if expr in (EXPR_LANE_LEFT, EXPR_LANE_RIGHT):
+      slide = 18.0 * s * (0.5 + 0.5 * math.sin(t * math.pi * 2.0 / 0.9))
+
+    # 눈 바깥쪽 위치 (눈·테두리 빛띠와 겹치지 않게 간격 확보)
+    eye_r = 165.0 * s
+    eye_dx = 250.0 * s
+    eye_y = -70.0 * s
+    gap = 70.0 * s
+    hw = 55.0 * s  # 화살표 반너비
+    hh = 70.0 * s  # 화살표 반높이
+    thick = max(10.0, 18.0 * s)
+    # 깜빡이는 노란색, 차선변경은 하늘색으로 구분
+    color = C_YELLOW if expr in (EXPR_BLINK_LEFT, EXPR_BLINK_RIGHT) else C_SWEAT
+
+    ex = cx + side * eye_dx
+    ey = face_cy + eye_y
+    ccx = ex + side * (eye_r + gap + hw + slide)
+    # < : 꼭짓점이 왼쪽, > : 꼭짓점이 오른쪽
+    apex_x = ccx + side * hw
+    base_x = ccx - side * hw
+    rl.draw_line_ex(rl.Vector2(apex_x, ey), rl.Vector2(base_x, ey - hh), thick, color)
+    rl.draw_line_ex(rl.Vector2(apex_x, ey), rl.Vector2(base_x, ey + hh), thick, color)
 
   def _draw_mouth(self, cx: float, cy: float, kind: str, s: float, t: float) -> None:
     w = 90.0 * s
